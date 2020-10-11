@@ -30,13 +30,14 @@ void BlinkMorseVariable(uint32_t sequence);
 
 int main(void)
 {
+	//static const uint8_t pole[32] = {1, 0, 1, 0 ,1, 0, 0, 1, 1, 1, 0, 1, 1, 1, 0, 1, 1, 1, 0, 0, 1, 0, 1, 0 ,1, 0, 0};
 	InitGPIO();
     /* Loop forever */
 	for(;;){
-		uint8_t pole[32] = {1, 0, 1, 0 ,1, 0, 0, 1, 1, 1, 0, 1, 1, 1, 0, 1, 1, 1, 0, 0, 1, 0, 1, 0 ,1, 0, 0};
+		uint32_t sequence = 0xA9DDCA80;
 		//BlinkLED();
-		BlinkMorseArray(pole);
-
+		//BlinkMorseArray(pole);
+		BlinkMorseVariable(sequence);
 	}
 }
 
@@ -96,5 +97,14 @@ __INLINE void BlinkMorseArray(uint8_t *pole){
  */
 
 __INLINE void BlinkMorseVariable(uint32_t sequence){
-	for(volatile uint32_t i = 0; i < 100000; i++) {}
+	for(uint8_t i = 0; i < 32;i++){
+			if(sequence & 0x80){
+				GPIOA->BSRR = (1<<5);
+			}
+			else{
+				GPIOA->BRR = (1<<5);
+			}
+			sequence <<= 1;
+			for(volatile uint32_t i = 0; i < 100000; i++) {}
+		}
 }
