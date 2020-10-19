@@ -19,6 +19,8 @@
 
 #include "stm32f0xx.h"
 
+void peripherals_init(void);
+
 #if !defined(__SOFT_FP__) && defined(__ARM_FP)
   #warning "FPU is not initialized, but the project is compiling for an FPU. Please initialize the FPU before use."
 #endif
@@ -27,4 +29,24 @@ int main(void)
 {
     /* Loop forever */
 	for(;;);
+}
+
+
+/**
+ * @brief: This function initializes the peripheral clock on GPIO ports
+ * A, B and C and enables the pins:
+ * 		PA4, PB0 as output
+ * 		PC0, PC1 as pullup input
+ *
+ * 	and initializes the interrupt
+ *
+ * @param: none
+ * @returns: none
+ */
+__INLINE void peripherals_init(void){
+	RCC->AHBENR |= RCC_AHBENR_GPIOAEN | RCC_AHBENR_GPIOBEN | RCC_AHBENR_GPIOCEN; /* enable clock */
+	GPIOA->MODER |= GPIO_MODER_MODER4_0;
+	GPIOB->MODER |= GPIO_MODER_MODER0_0;
+	GPIOC->PUPDR |= GPIO_PUPDR_PUPDR0_0;
+	GPIOC->PUPDR |= GPIO_PUPDR_PUPDR1_0;
 }
