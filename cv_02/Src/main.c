@@ -19,7 +19,9 @@
 
 #include "stm32f0xx.h"
 #define SYS_CLOCK ((uint32_t) 8000000) /* 8MHz, used for  re-usability*/
-#define LED_TIME_BLINK ((uint16_t) 300) /* 300ms between blinks */
+#define LED_TIME_BLINK ((uint32_t) 300) /* 300ms between blinks */
+
+volatile uint32_t Tick;
 
 void PeripheralsInit(void);
 void InterruptInit(void);
@@ -35,7 +37,9 @@ int main(void)
 	PeripheralsInit();
 	InterruptInit();
     /* Loop forever */
-	for(;;);
+	while(1){
+
+	}
 }
 
 
@@ -73,11 +77,20 @@ __INLINE void InterruptInit(void){
 	NVIC_EnableIRQ(EXTI0_1_IRQn);
 }
 
-__INLINE void blikac(void){
-
+/**
+ * @brief 	Blink LED1 after every 300ms
+ *
+ * @param 	none
+ * @returns none
+ */
+__STATIC_INLINE void blikac(void){
+	static uint32_t delay;
+	if(Tick > delay + LED_TIME_BLINK){
+		GPIOA->ODR ^= (1 << 4);
+		delay = Tick;
+	}
 }
 
-volatile uint32_t Tick;
 /**
  * @brief 	SysTick handling function
  *
