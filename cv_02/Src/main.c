@@ -22,6 +22,8 @@
 #define LED_TIME_BLINK ((uint32_t) 300) /* 300ms between blinks */
 #define LED_TIME_SHORT ((uint32_t) 100) /* 100ms LED on */
 #define LED_TIME_LONG ((uint32_t) 1000) /* 100ms LED on */
+#define DEBOUNCE_TIME ((uint32_t) 40)	/* 40ms between debounces */
+#define DEBOUNCE_TIME_SHORT ((uint32_t) 5)	/* 5ms between debounces */
 
 volatile uint32_t Tick;
 
@@ -89,7 +91,7 @@ __INLINE void InterruptInit(void){
 __STATIC_INLINE void blikac(void){
 	static uint32_t delay;
 	if(Tick > delay + LED_TIME_BLINK){
-		GPIOA->ODR ^= (1 << 4);
+		GPIOA->ODR ^= (1<<4);
 		delay = Tick;
 	}
 }
@@ -98,30 +100,41 @@ __STATIC_INLINE void blikac(void){
 /**
  * @brief 	Handles button presses - if S1 is pressed, light up
  * 			LED2 for LED_TIME_LONG, if S2 is pressed, light up
- * 			LED2 for LED_TIME_SHORT, version without debounce
- * 			handling
+ * 			LED2 for LED_TIME_SHORT
  *
  * @param 	none
  * @returns none
  */
 __STATIC_INLINE void tlacitka(void){
-	static uint32_t old_s1;
-	static uint32_t old_s2;
-	uint32_t new_s1 = GPIOC->IDR & (1<<1);
-	uint32_t new_s2 = GPIOC->IDR & (1<<0);
 	static uint32_t off_time;
+	static uint32_t delay_s1;
+	static uint32_t delay_s2;
 
-	if(old_s1 && !new_s1){
-		off_time = Tick + LED_TIME_LONG;
-		GPIOB->BSRR = (1<<0);
-	}
-	old_s1 = new_s1;
+	if(Tick > delay_s1 + DEBOUNCE_TIME_SHORT){
+		static uint16_t debounce = 0xFFFF;
 
-	if(old_s2 && !new_s2){
-		off_time = Tick + LED_TIME_SHORT;
-		GPIOB->BSRR = (1<<0);
+		debounce <<= 1;
+
+		if(GPIOC->IDR & (1<<1)){
+			debounce |= 0x0001;
+		}
+		if(debounce == 0x7FFF){
+			off_time = Tick + LED_TIME_LONG;
+			GPIOB->BSRR = (1<<0);
+		}
 	}
-	old_s2 = new_s2;
+
+	if(Tick > delay_s2 + DEBOUNCE_TIME){
+		static uint32_t old_s2;
+		uint32_t new_s2 = GPIOC->IDR & (1<<0);
+
+		if(old_s2 && !new_s2){
+			off_time = Tick + LED_TIME_SHORT;
+			GPIOB->BSRR = (1<<0);
+		}
+		old_s2 = new_s2;
+
+	}
 
 	if(Tick > off_time){
 		GPIOB->BRR = (1<<0);
