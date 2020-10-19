@@ -27,8 +27,8 @@
 
 volatile uint32_t Tick;
 
-void PeripheralsInit(void);
-void InterruptInit(void);
+void peripherals_init(void);
+void interrupt_init(void);
 __STATIC_INLINE void blikac(void);
 __STATIC_INLINE void tlacitka(void);
 
@@ -39,8 +39,8 @@ __STATIC_INLINE void tlacitka(void);
 int main(void)
 {
 	SysTick_Config(SYS_CLOCK/1000); /* 1000 us = 1ms */
-	PeripheralsInit();
-	InterruptInit();
+	peripherals_init();
+	interrupt_init();
     /* Loop forever */
 	while(1){
 		blikac();
@@ -57,7 +57,7 @@ int main(void)
  * @param 	none
  * @returns none
  */
-__INLINE void PeripheralsInit(void){
+__INLINE void peripherals_init(void){
 	RCC->AHBENR |= RCC_AHBENR_GPIOAEN | RCC_AHBENR_GPIOBEN | RCC_AHBENR_GPIOCEN; /* enable clock */
 	
 	GPIOA->MODER |= GPIO_MODER_MODER4_0;
@@ -73,7 +73,7 @@ __INLINE void PeripheralsInit(void){
  * @returns none
  */
 
-__INLINE void InterruptInit(void){
+__INLINE void interrupt_init(void){
 	RCC->APB2ENR |= RCC_APB2ENR_SYSCFGEN;
 	
 	SYSCFG->EXTICR[0] |= SYSCFG_EXTICR1_EXTI0_PC;
