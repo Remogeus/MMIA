@@ -81,7 +81,7 @@
   * @{
   */
 
-#include "../../cv_02/CMSIS/Device/ST/STM32F0xx/Include/stm32f0xx.h"
+#include "stm32f0xx.h"
 
 /**
   * @}
