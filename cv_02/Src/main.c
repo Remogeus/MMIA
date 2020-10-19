@@ -18,6 +18,8 @@
  */
 
 #include "stm32f0xx.h"
+#define SYS_CLOCK ((uint32_t) 8000000) /* 8MHz, used for  re-usability*/
+#define LED_TIME_BLINK ((uint16_t) 300) /* 300ms between blinks */
 
 void PeripheralsInit(void);
 void InterruptInit(void);
@@ -29,6 +31,7 @@ void InterruptInit(void);
 
 int main(void)
 {
+	SysTick_Config(SYS_CLOCK/1000); /* 1000 us = 1ms */
 	PeripheralsInit();
 	InterruptInit();
     /* Loop forever */
@@ -70,6 +73,21 @@ __INLINE void InterruptInit(void){
 	NVIC_EnableIRQ(EXTI0_1_IRQn);
 }
 
+__INLINE void blikac(void){
+
+}
+
+volatile uint32_t Tick;
+/**
+ * @brief 	SysTick handling function
+ *
+ * @param 	none
+ * @returns none
+ */
+void SysTick_Handler(void){
+	Tick++;
+}
+
 /**
  * @brief 	Interrupt handler that negates PB0
  *
@@ -84,3 +102,5 @@ void EXTI0_1_IRQHandler(void){
 		/* equivalent - GPIOB->BRR = 0b1, shift used for consistency and for re-usability */
 	}
 }
+
+
