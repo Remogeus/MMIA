@@ -20,12 +20,15 @@
 #include "stm32f0xx.h"
 #define SYS_CLOCK ((uint32_t) 8000000) /* 8MHz, used for  re-usability*/
 #define LED_TIME_BLINK ((uint32_t) 300) /* 300ms between blinks */
+#define LED_TIME_SHORT ((uint32_t) 100) /* 100ms LED on */
+#define LED_TIME_LONG ((uint32_t) 1000) /* 100ms LED on */
 
 volatile uint32_t Tick;
 
 void PeripheralsInit(void);
 void InterruptInit(void);
-
+__STATIC_INLINE void blikac(void);
+__STATIC_INLINE void tlacitka(void);
 
 #if !defined(__SOFT_FP__) && defined(__ARM_FP)
   #warning "FPU is not initialized, but the project is compiling for an FPU. Please initialize the FPU before use."
@@ -38,10 +41,10 @@ int main(void)
 	InterruptInit();
     /* Loop forever */
 	while(1){
-
+		blikac();
+		tlacitka();
 	}
 }
-
 
 /**
  * @brief 	This function initializes the peripheral clock on GPIO ports
@@ -78,7 +81,7 @@ __INLINE void InterruptInit(void){
 }
 
 /**
- * @brief 	Blink LED1 after every 300ms
+ * @brief 	Blink LED1 after every 300ms - a heartbeat, so to speak
  *
  * @param 	none
  * @returns none
@@ -88,6 +91,40 @@ __STATIC_INLINE void blikac(void){
 	if(Tick > delay + LED_TIME_BLINK){
 		GPIOA->ODR ^= (1 << 4);
 		delay = Tick;
+	}
+}
+
+
+/**
+ * @brief 	Handles button presses - if S1 is pressed, light up
+ * 			LED2 for LED_TIME_LONG, if S2 is pressed, light up
+ * 			LED2 for LED_TIME_SHORT, version without debounce
+ * 			handling
+ *
+ * @param 	none
+ * @returns none
+ */
+__STATIC_INLINE void tlacitka(void){
+	static uint32_t old_s1;
+	static uint32_t old_s2;
+	uint32_t new_s1 = GPIOC->IDR & (1<<1);
+	uint32_t new_s2 = GPIOC->IDR & (1<<0);
+	static uint32_t off_time;
+
+	if(old_s1 && !new_s1){
+		off_time = Tick + LED_TIME_LONG;
+		GPIOB->BSRR = (1<<0);
+	}
+	old_s1 = new_s1;
+
+	if(old_s2 && !new_s2){
+		off_time = Tick + LED_TIME_SHORT;
+		GPIOB->BSRR = (1<<0);
+	}
+	old_s2 = new_s2;
+
+	if(Tick > off_time){
+		GPIOB->BRR = (1<<0);
 	}
 }
 
