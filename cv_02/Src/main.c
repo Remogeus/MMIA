@@ -19,7 +19,9 @@
 
 #include "stm32f0xx.h"
 
-void peripherals_init(void);
+void PeripheralsInit(void);
+void InterruptInit(void);
+
 
 #if !defined(__SOFT_FP__) && defined(__ARM_FP)
   #warning "FPU is not initialized, but the project is compiling for an FPU. Please initialize the FPU before use."
@@ -27,26 +29,58 @@ void peripherals_init(void);
 
 int main(void)
 {
+	PeripheralsInit();
+	InterruptInit();
     /* Loop forever */
 	for(;;);
 }
 
 
 /**
- * @brief: This function initializes the peripheral clock on GPIO ports
- * A, B and C and enables the pins:
- * 		PA4, PB0 as output
- * 		PC0, PC1 as pullup input
+ * @brief 	This function initializes the peripheral clock on GPIO ports
+ * 			A, B and C and enables the pins:
+ * 				PA4, PB0 as output
+ * 				PC0, PC1 as pullup input
  *
- * 	and initializes the interrupt
- *
- * @param: none
- * @returns: none
+ * @param 	none
+ * @returns none
  */
-__INLINE void peripherals_init(void){
+__INLINE void PeripheralsInit(void){
 	RCC->AHBENR |= RCC_AHBENR_GPIOAEN | RCC_AHBENR_GPIOBEN | RCC_AHBENR_GPIOCEN; /* enable clock */
+	
 	GPIOA->MODER |= GPIO_MODER_MODER4_0;
 	GPIOB->MODER |= GPIO_MODER_MODER0_0;
 	GPIOC->PUPDR |= GPIO_PUPDR_PUPDR0_0;
 	GPIOC->PUPDR |= GPIO_PUPDR_PUPDR1_0;
+}
+
+/**
+ * @brief 	This function enables the external interrupt on EXTI0 (PC0)
+ *
+ * @param 	none
+ * @returns none
+ */
+
+__INLINE void InterruptInit(void){
+	RCC->APB2ENR |= RCC_APB2ENR_SYSCFGEN;
+	
+	SYSCFG->EXTICR[0] |= SYSCFG_EXTICR1_EXTI0_PC;
+	EXTI->IMR |= EXTI_IMR_MR0;
+	EXTI->FTSR |= EXTI_FTSR_TR0;
+	NVIC_EnableIRQ(EXTI0_1_IRQn);
+}
+
+/**
+ * @brief 	Interrupt handler that negates PB0
+ *
+ * @param 	none
+ * @returns none
+ */
+
+void EXTI0_1_IRQHandler(void){
+	if(EXTI->PR & EXTI_PR_PR0){
+		EXTI->PR |= EXTI_PR_PR0;
+		GPIOB->BRR = (1<<0);
+		/* equivalent - GPIOB->BRR = 0b1, shift used for consistency and for re-usability */
+	}
 }
