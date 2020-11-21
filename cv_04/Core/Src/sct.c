@@ -38,8 +38,8 @@ void sct_init(void){
 	HAL_GPIO_WritePin(SCT_NOE_GPIO_Port, SCT_NOE_Pin,0);
 }
 
-void sct_value(uint16_t value){
-	static const uint32_t reg_values[3][10] = {
+void sct_value(uint16_t value, uint8_t led){
+	static const uint32_t reg_values[4][10] = {
 	    {
 	        /* PCDE--------GFAB @ DIS1 */
 	        0b0111000000000111 << 16,
@@ -79,14 +79,28 @@ void sct_value(uint16_t value){
 	        0b0111000000001111 << 0,
 	        0b0110000000001111 << 0,	
         },
+		{
+			/* ----43215678---- @ LED */
+			 0b0000000000000000 << 16,
+			 0b0000000100000000 << 16,
+			 0b0000001000000000 << 16,
+			 0b0000010000000000 << 16,
+			 0b0000100000000000 << 16,
+			 0b0000000010000000 << 16,
+			 0b0000000001000000 << 16,
+			 0b0000000000100000 << 16,
+			 0b0000000000010000 << 16,
+			 0b0000000000000000 << 16, /* only a padding so that the whole array is defined */
+		},
 
 	};
 
 	uint32_t reg = 0;
 
 	reg |= reg_values[0][value / 100 % 10]; /* hundreds */
-	reg |= reg_values[1][value / 10 % 10]; /* tenths */
+	reg |= reg_values[1][value / 10 % 10]; /* tenth */
 	reg |= reg_values[2][value / 1 % 10]; /* ones */
+	reg |= reg_values[3][led]; /* LED bar */
 
 	sct_led(reg);
 }

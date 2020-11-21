@@ -46,6 +46,8 @@ UART_HandleTypeDef huart2;
 
 /* USER CODE BEGIN PV */
 
+static volatile uint32_t raw_pot;
+
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -59,6 +61,11 @@ static void MX_ADC_Init(void);
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
+
+void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef* hadc)
+{
+	raw_pot = HAL_ADC_GetValue(hadc);
+}
 
 /* USER CODE END 0 */
 
@@ -94,6 +101,11 @@ int main(void)
   MX_ADC_Init();
   /* USER CODE BEGIN 2 */
 
+  sct_init();
+
+  HAL_ADCEx_Calibration_Start(&hadc);
+  HAL_ADC_Start_IT(&hadc);
+
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -103,6 +115,7 @@ int main(void)
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
+	sct_value(raw_pot * 500 / 4096, raw_pot * 9 / 4096);
   }
   /* USER CODE END 3 */
 }
