@@ -22,6 +22,7 @@
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
+#include <stdio.h>
 
 /* USER CODE END Includes */
 
@@ -34,6 +35,8 @@
 /* USER CODE BEGIN PD */
 
 #define RX_BUFFER_LEN 64
+#define uart_rx_write_ptr (RX_BUFFER_LEN - hdma_usart2_rx.Instance->CNDTR)
+#define CMD_BUFFER_LEN 256
 
 /* USER CODE END PD */
 
@@ -45,6 +48,8 @@
 /* Private variables ---------------------------------------------------------*/
 UART_HandleTypeDef huart2;
 DMA_HandleTypeDef hdma_usart2_rx;
+static uint8_t uart_rx_buf[RX_BUFFER_LEN];
+static volatile uint16_t uart_rx_read_ptr = 0;
 
 /* USER CODE BEGIN PV */
 
@@ -56,11 +61,48 @@ static void MX_GPIO_Init(void);
 static void MX_DMA_Init(void);
 static void MX_USART2_UART_Init(void);
 /* USER CODE BEGIN PFP */
-
+static void uart_process_command(char *cmd);
+static void uart_byte_available(uint8_t c);
+int _write(int file, char const *buf, int n);
 /* USER CODE END PFP */
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
+/**
+ * @brief Print UART message to stdout
+ * @retval void
+ */
+static void uart_process_command(char *cmd)
+{
+    printf("prijato: '%s'\n", cmd);
+}
+
+/**
+ * @brief UART buffer with EOL testing
+ * @retval void
+ */
+static void uart_byte_available(uint8_t c) 
+{
+    static uint16_t cnt;
+    static char data[CMD_BUFFER_LEN];
+
+    if (cnt < CMD_BUFFER_LEN && c >= 32 && c <= 126) data[cnt++] = c;
+    if ((c == '\n' || c == '\r') && cnt > 0) {
+        data[cnt] = '\0';
+        uart_process_command(data);
+        cnt = 0;
+    }
+}
+
+/**
+ * @brief Overload of write() for printf()
+ * @retval int
+ */
+int _write(int file, char const *buf, int n)
+{
+    HAL_UART_Transmit(&huart2, (uint8_t*)(buf), n, HAL_MAX_DELAY);
+    return n;
+}
 
 /* USER CODE END 0 */
 
@@ -96,6 +138,8 @@ int main(void)
   MX_USART2_UART_Init();
   /* USER CODE BEGIN 2 */
 
+  HAL_UART_Receive_DMA(&huart2, uart_rx_buf, RX_BUFFER_LEN);
+
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -104,9 +148,18 @@ int main(void)
   {
     /* USER CODE END WHILE */
 
+    while (uart_rx_read_ptr != uart_rx_write_ptr) {
+        uint8_t b = uart_rx_buf[uart_rx_read_ptr];
+        if (++uart_rx_read_ptr >= RX_BUFFER_LEN) uart_rx_read_ptr = 0; /* increase read pointer */
+
+        uart_byte_available(b); /* process every received byte with the RX state machine */
+    }
+
+    /*
     uint8_t c;
     HAL_UART_Receive(&huart2, &c, 1, HAL_MAX_DELAY);
     HAL_UART_Transmit(&huart2, &c, 1, HAL_MAX_DELAY);
+    */
 
     /* USER CODE BEGIN 3 */
   }
