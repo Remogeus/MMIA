@@ -193,9 +193,63 @@ int main(void)
 	  OWReadTemperature(&temp_18b20);
 
 	  sct_value(temp_18b20 / 10);
-*/
+
 	  sct_value(ntc_lookup[HAL_ADC_GetValue(&hadc)]);
 	  HAL_Delay(500);
+*/
+	  static enum { SHOW_NTC, SHOW_18B20 } state = SHOW_NTC;
+	  int16_t temp_18b20;
+	  int16_t temp_ntc;
+
+	  if (state == SHOW_18B20){
+		  HAL_GPIO_WritePin(LED1_GPIO_Port, LED1_Pin, GPIO_PIN_RESET);
+		  HAL_GPIO_WritePin(LED2_GPIO_Port, LED2_Pin, GPIO_PIN_SET);
+		  sct_value(temp_18b20 / 10);
+
+	  } else if (state == SHOW_NTC){
+		  HAL_GPIO_WritePin(LED2_GPIO_Port, LED2_Pin, GPIO_PIN_RESET);
+		  HAL_GPIO_WritePin(LED1_GPIO_Port, LED1_Pin, GPIO_PIN_SET);
+		  sct_value(temp_ntc);
+	  }
+
+	  static uint32_t old_s1;
+	  static uint32_t old_s2;
+	  static uint32_t delay;
+	  static uint8_t update_DS18 = 0;
+	  static uint32_t delay_18b20;
+
+	  uint32_t new_s1 = HAL_GPIO_ReadPin(S1_GPIO_Port, S1_Pin);
+	  uint32_t new_s2 = HAL_GPIO_ReadPin(S2_GPIO_Port, S2_Pin);
+
+	  if (old_s1 && !new_s1){
+	  		delay = HAL_GetTick() + 40;
+	  		delay_18b20 = HAL_GetTick() + CONVERT_T_DELAY;
+	  		state = SHOW_18B20;
+	  		update_DS18 = 1;
+	  }
+	  old_s1 = new_s1;
+
+	  if (old_s2 && !new_s2){
+	  		delay = HAL_GetTick() + 40;
+	  		state = SHOW_NTC;
+	  }
+	  old_s2 = new_s2;
+
+	  if(HAL_GetTick() > delay_18b20){
+		  update_DS18 = 1;
+	  }
+
+	  if(update_DS18){
+		  OWConvertAll();
+		  HAL_Delay(CONVERT_T_DELAY);
+		  OWReadTemperature(&temp_18b20);
+		  delay_18b20 = HAL_GetTick() + CONVERT_T_DELAY;
+		  update_DS18 = 0;
+	  }
+
+	  if(HAL_GetTick() > delay){
+		  temp_ntc = ntc_lookup[HAL_ADC_GetValue(&hadc)];
+	  }
   }
   /* USER CODE END 3 */
 }
